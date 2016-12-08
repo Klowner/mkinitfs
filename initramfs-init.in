@@ -365,7 +365,7 @@ fi
 
 if [ "$KOPT_rootfstype" = "zfs" ]; then
 	# zpool reports /dev/zfs missing if it can't read /etc/mtab
-	ln -s /proc/mdstat /etc/mtab
+	ln -s /proc/mounts /etc/mtab
 fi
 
 # check if root=... was set

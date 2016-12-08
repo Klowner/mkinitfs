@@ -497,23 +497,13 @@ static void start_lvm2(char *devnode)
 		spawn_command(&spawnmgr, lvm2_argv, 0);
 }
 
-static void start_zpool(char *devnode)
-{
-	static blkid_cache cache = NULL;
-
-	if (cache == NULL)
-		blkid_get_cache(&cache, NULL);
-
-	char *uuid = blkid_get_tag_value(cache, "UUID", devnode);
+static void start_zpool(char *uuid) {
 	char *zpool_argv[] = {
 		ZPOOL_PATH, "import", uuid,
 		NULL
 	};
 	if (use_zpool && uuid)
 		spawn_command(&spawnmgr, zpool_argv, 0);
-
-	if (uuid)
-		free(uuid);
 }
 
 static int read_pass(char *pass, size_t pass_size)
@@ -933,6 +923,7 @@ static int searchdev(struct uevent *ev, const char *searchdev, int scanbootmedia
 		blkid_get_cache(&conf->blkid_cache, NULL);
 
 	type = blkid_get_tag_value(conf->blkid_cache, "TYPE", ev->devnode);
+	uuid = blkid_get_tag_value(conf->blkid_cache, "UUID", ev->devnode);
 
 	if (searchdev != NULL) {
 		if (strncmp("LABEL=", searchdev, 6) == 0) {
@@ -955,11 +946,9 @@ static int searchdev(struct uevent *ev, const char *searchdev, int scanbootmedia
 		} else if (strcmp("LVM2_member", type) == 0) {
 			start_lvm2(ev->devnode);
 		} else if (strcmp("zfs_member", type) == 0) {
-			start_zpool(ev->devnode);
+			start_zpool(uuid);
 		} else if (scanbootmedia) {
 			rc = scandev(conf, ev->devnode, type);
-		} else if (bootrepos) {
-			rc = find_bootrepos(ev->devnode, type, bootrepos, apkovls);
 		}
 	}
 
